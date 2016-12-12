@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>TEST</h1>
+    <button onclick="request(this)">Renew</button>
+    <button onclick="request(this)">Add Passenger</button>
+    <button onclick="request(this)">Reset Session</button>
+    <button onclick="request(this)">Get Global Status</button>
+    <button onclick="toggle(this)">Start</button>
+    <button onclick="toggle(this)">Stop</button>
+<div id="data">
+    <ul id="stages"></ul>
+    <div id="elevator">Elevator:</div>
+    <div id="passengers"></div>
+</div>
+<script>
+    function request(evt) {
+        var xmlhttp = new XMLHttpRequest();
+        var param = '';
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                console.dir(JSON.parse(this.response));
+                draw(JSON.parse(this.response));
+                }
+            };
+        if (evt.innerText == 'Renew') param = 'getNewValues';
+        if (evt.innerText == 'Add Passenger') param = 'addNewPassenger';
+        if (evt.innerText == 'Reset Session') param = 'resetThisSession';
+        if (evt.innerText == 'Get Global Status') param = 'getGlobalStatus';
+        xmlhttp.open("GET", "index.php?" + param, true);
+        xmlhttp.send();
+    }
+    function draw(data) {
+        drawStages(data.data.stages);
+        drawElevator(data.elevator);
+        drawPassengers(data.passengers)
+    }
+    function drawStages(stages){
+        for (var i = 0; i < stages.length; i++){
+            if (document.getElementById('stage' + i)) {
+                document.getElementById('stage' + i).innerHTML = 'Stage' + i + ' : ' + stages[i];
+            } else {
+                stage = document.createElement('li');
+                stage.id = 'stage' + i;
+                stage.innerHTML = 'Stage_' + i + ' : ' + stages[i];
+                document.getElementById("stages").appendChild(stage);
+            }
+        }
+    }
+    function drawPassengers(passengers) {
+        for (var i = 0; i < passengers.length; i++){
+            if (document.getElementById('passenger' + i)) {
+                passenger = document.getElementById('passenger' + i);
+            } else {
+                passenger = document.createElement('div');
+                passenger.id = 'passenger' + i;
+            }
+            passenger.innerHTML = 'P' + i + ' : ' + passengers[i].status;
+            if (passengers[i].inElevator){
+                passenger.innerHTML += '=>' + passengers[i].destination;
+                document.getElementById('elevator').appendChild(passenger);
+            } else {
+                document.getElementById('stage' + passengers[i].stage).appendChild(passenger);
+            }
+        }
+    }
+    function drawElevator(e) {
+        if (e.isMoving){
+            document.getElementById('elevator').innerHTML = 'Elevator: is moving: ' + e.stage + ' => ' + e.destination;
+        } else {
+            document.getElementById('elevator').innerHTML = 'Elevator: is on stage: ' + e.stage;
+        }
+    }
+
+    function toggle(evt) {
+        if (evt.innerText == 'Start'){
+            var i = 999;
+            function count() {
+                requester();
+                i--;
+                if(i<0) clearTimeout(timeout);
+            }
+            timeout = setInterval(count, 1000);
+        } else if (evt.innerText == 'Stop') {
+            clearTimeout(timeout);
+        }
+    }
+    function requester() {
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                console.dir(JSON.parse(this.response));
+                draw(JSON.parse(this.response));
+            }
+        };
+        xmlhttp.open("GET", "index.php?getNewValues", true);
+        xmlhttp.send();
+    }
+</script>
+</body>
+</html>
